@@ -1,0 +1,26 @@
+{
+  "author" : "",
+  "commands" : [
+    {
+      "script" : "script.js",
+      "name" : "9pngit",
+      "handlers" : {
+        "run" : "onRun"
+      },
+      "shortcut":"cmd shift 9",
+      "identifier" : "com.bohemiancoding.sketch.runscriptidentifier"
+    }
+  ],
+  "menu" : {
+    "title" : "9pngit",
+    "items" : [
+      "com.bohemiancoding.sketch.runscriptidentifier"
+    ],
+    "isRoot":true
+  },
+  "identifier" : "com.example.sketch.1d2a83a1-2d03-4a30-a6b3-df836e891c7d",
+  "version" : "1.0",
+  "description" : "",
+  "authorEmail" : "",
+  "name" : "9pngit"
+}
