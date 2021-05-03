@@ -1,23 +1,24 @@
+const sketch    = require('sketch')
+const ui        = require("sketch/ui")
+const Rectangle = require('sketch/dom').Rectangle
+const Group     = require('sketch/dom').Group
+const Artboard  = require('sketch/dom').Artboard
+const Shape     = require('sketch/dom').Shape
+const ShapePath = require('sketch/dom').ShapePath
+
 var l = function(str) {
     var time = new Date();
     log("" + time.toISOString().substring(0, 23) + " 9pngit| " + str)
 }
+
 var str = function(obj) {
     return JSON.stringify(obj)
 }
+
 var onRun = function(context) {
 	console.log('This is an example Sketch script.')
-
-	var sketch 	    = require('sketch')
-	var ui          = require("sketch/ui")
-    var Rectangle   = require('sketch/dom').Rectangle
-    var Group       = require('sketch/dom').Group
-    var Artboard    = require('sketch/dom').Artboard
-    var Shape       = require('sketch/dom').Shape
-    var ShapePath   = require('sketch/dom').ShapePath
+    
     l("shape: " + str(Shape));
-
-	//ui.message("wazzzup!")
 
 	var document = sketch.getSelectedDocument()
 	
@@ -46,36 +47,33 @@ var onRun = function(context) {
     }
     ui.message("Working on: " + artProto.name)
     l("artProto     : " + str(artProto))
+
+    var art2 = build9png(artProto, 2, 4);
+    art2.frame.y = artProto.frame.y + artProto.frame.height + 20;
+    var art4 = build9png(artProto, 4, 8);
+    art4.frame.y = artProto.frame.y + artProto.frame.height + 20 + art2.frame.height + 20;
+
+};
+
+var build9png = function(artProto, scale, patchSize) {
     
+    // duplicate source layers
     var layersDup = []
-    l("layersDup    : " + str(layersDup));
     var protoLayers = artProto.layers.forEach(function(layer, i) {
         layersDup.push(layer.duplicate())
     });
     l("layersDup    : " + str(layersDup));
 
-    var testRect = new sketch.ShapePath({
-        name : "9_test",
-        frame : {x:0, y:0, width: 8, height: 8},
-        shapeType: "Rectangle",
-        style : {
-            fills: ['#abcdef'],
-            borders: []
-        }
-    });
-    var testRects = [ testRect ];
-    l("testRect     : " + str(testRect));
-    l("testRects    : " + str(testRects));
-
+    // making artboard
     var art2 = new Artboard({
         parent: artProto.parent,
         name: artProto.name + ".9",
         flowStartPoint: true,
         frame : {
             x:      artProto.frame.x,
-            y:      artProto.frame.y + artProto.frame.height + 20,
-            width:  artProto.frame.width * 2 + 2,
-            height: artProto.frame.height * 2 + 2
+            y:      artProto.frame.y + artProto.frame.height,
+            width:  artProto.frame.width * scale + 2,
+            height: artProto.frame.height * scale + 2
         },
     })
     l("art2         : " + str(art2))
@@ -105,13 +103,12 @@ var onRun = function(context) {
     // content is ready
     // - zoom
     // - translate
-    grpContent.frame.width *= 2;
-    grpContent.frame.height *= 2;
+    grpContent.frame.width *= scale;
+    grpContent.frame.height *= scale;
     grpContent.frame.x = 1;
     grpContent.frame.y = 1;
     l("grpContent  s: " + str(grpContent))
 
-    var patchSize = 4;
     var left = new ShapePath({
         parent : art2,
         name : "9_left",
@@ -142,8 +139,22 @@ var onRun = function(context) {
     
     l("art2        f: " + str(art2))
 
-};
+    return art2;
 
-var translate = function(layers) {
+}
+
+var testRect = function() {
+    var testRect = new sketch.ShapePath({
+        name : "9_test",
+        frame : {x:0, y:0, width: 8, height: 8},
+        shapeType: "Rectangle",
+        style : {
+            fills: ['#abcdef'],
+            borders: []
+        }
+    });
+    var testRects = [ testRect ];
+    l("testRect     : " + str(testRect));
+    l("testRects    : " + str(testRects));
 
 }
