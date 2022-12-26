@@ -6,85 +6,95 @@ const Artboard  = require('sketch/dom').Artboard
 const Shape     = require('sketch/dom').Shape
 const ShapePath = require('sketch/dom').ShapePath
 
-var l = function(str) {
+function l(str) {
     var time = new Date();
     log("" + time.toISOString().substring(0, 23) + " 9pngit| " + str)
 }
 
-var str = function(obj) {
+function str(obj) {
     return JSON.stringify(obj)
 }
 
-var onRun = function(context) {
-	console.log('This is an example Sketch script.')
-    
-    l("shape: " + str(Shape));
-
-	var document = sketch.getSelectedDocument()
+function onRun(context) {
+	l(" --- onRun --- ");
 	
-	var selectedLayers = document.selectedLayers
-	var selectedCount = selectedLayers.length
+    var document = sketch.getSelectedDocument();
+	
+	var selectedLayers = document.selectedLayers;
+	var selectedCount = selectedLayers.length;
 
 	if (selectedCount === 0) {
-        ui.message('No layers are selected.')
+        ui.message('No layers are selected.');
         return;
     }
 	if (selectedCount > 1) {
         console.log('Too many layers:');
         selectedLayers.forEach(function (layer, i) {
-            console.log((i) + ': ' + layer.name + ", id: " + layer.id + ", " + JSON.stringify(layer))
-        })
-        ui.message('Select 1 Artboard. Selected: ' + selectedCount)
+            console.log((i) + ': ' + layer.name + ", id: " + layer.id + ", " + JSON.stringify(layer));
+        });
+        ui.message('Select 1 Artboard. Selected: ' + selectedCount);
         return;
     } 
-
-    // do the job
-    l(" --- onRun --- ")
-    var artProto = selectedLayers.layers[0]
-    if (artProto.type !== "Artboard") {
-        ui.message("Select an artboard! Selected: " + artProto.type)
+    if (selectedLayers.layers[0].type !== "Artboard") {
+        ui.message("Select an artboard! Selected: " + selectedLayers.layers[0].type);
         return
     }
-    ui.message("Working on: " + artProto.name)
-    l("artProto     : " + str(artProto))
+    ui.message("Working on: " + selectedLayers.layers[0].name)
 
-    var art2 = build9png(artProto, 2, 4);
-    art2.frame.y = artProto.frame.y + artProto.frame.height + 20;
-    var art4 = build9png(artProto, 4, 8);
-    art4.frame.y = artProto.frame.y + artProto.frame.height + 20 + art2.frame.height + 20;
+    // in native context
+    var layer = context.selection[0];
+    var layer2 = layer.duplicate();
+    layer2.multiplyBy(2);
+    var layer4 = layer.duplicate();
+    layer4.multiplyBy(4);
+    // in JS context
+    const jsLayer   = sketch.fromNative(layer);
+    const jsLayer2  = sketch.fromNative(layer2);
+    const jsLayer4  = sketch.fromNative(layer4);
+    
+    l("jsLayer:  " + str(jsLayer));
+    l("jsLayer2: " + str(jsLayer2));
+    l("jsLayer4: " + str(jsLayer4));
+    jsLayer2.frame.x = jsLayer.frame.x;
+    jsLayer2.frame.y = jsLayer.frame.y + jsLayer.frame.height + 20;
+    jsLayer4.frame.x = jsLayer.frame.x;
+    jsLayer4.frame.y = jsLayer2.frame.y + jsLayer2.frame.height + 20;
 
+    wrap9png(jsLayer2, 2, "drawable-xhdpi/");
+    add9pngLayers(jsLayer2, 4);
+    wrap9png(jsLayer4, 4, "drawable-xxxhdpi/");
+    add9pngLayers(jsLayer4, 8);
+    
 };
 
-var build9png = function(artProto, scale, patchSize) {
-    
-    // duplicate source layers
-    var layersDup = []
-    var protoLayers = artProto.layers.forEach(function(layer, i) {
-        layersDup.push(layer.duplicate())
-    });
-    l("layersDup    : " + str(layersDup));
+function wrap9png(artboard, patchSize, exportPrefix) {
+    artboard.name = artboard.name + ".9";
+    artboard.frame.width = artboard.frame.width + 2;
+    artboard.frame.height = artboard.frame.height + 2;
+    artboard.exportFormats = [{
+      fileFormat: "png",
+      prefix:     exportPrefix,
+      size:       "1x",
+      type:       "ExportFormat"
+    }];
+}
 
-    // making artboard
-    var art2 = new Artboard({
-        parent: artProto.parent,
-        name: artProto.name + ".9",
-        flowStartPoint: true,
-        frame : {
-            x:      artProto.frame.x,
-            y:      artProto.frame.y + artProto.frame.height,
-            width:  artProto.frame.width * scale + 2,
-            height: artProto.frame.height * scale + 2
-        },
-    })
-    l("art2         : " + str(art2))
+function add9pngLayers(art2, patchSize) {
+    
+    var layersOrigs = [];
+    var protoLayers = art2.layers.forEach(function(layer, i) {
+        layersOrigs.push(layer);
+    });
 
     // content group with mask overlay
     var grpContent = new sketch.Group({
         parent : art2,
         name : "9_content",
-        frame : {x:0, y:0, width:artProto.frame.width, height:artProto.frame.height},
+        frame : {x:1, y:1, width:art2.frame.width-2, height:art2.frame.height-2},
     });
-    grpContent.layers = layersDup;
+    l("grpContent  s: " + str(grpContent))
+    
+    grpContent.layers = layersOrigs;
 
     l("art2         : " + str(art2))
 
@@ -99,15 +109,6 @@ var build9png = function(artProto, scale, patchSize) {
     mask.moveToBack();
     l("mask         : " + str(mask))
     l("grpContent   : " + str(grpContent))    
-
-    // content is ready
-    // - zoom
-    // - translate
-    grpContent.frame.width *= scale;
-    grpContent.frame.height *= scale;
-    grpContent.frame.x = 1;
-    grpContent.frame.y = 1;
-    l("grpContent  s: " + str(grpContent))
 
     var left = new ShapePath({
         parent : art2,
@@ -143,7 +144,7 @@ var build9png = function(artProto, scale, patchSize) {
 
 }
 
-var testRect = function() {
+function testRect() {
     var testRect = new sketch.ShapePath({
         name : "9_test",
         frame : {x:0, y:0, width: 8, height: 8},
